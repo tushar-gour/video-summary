@@ -1,5 +1,4 @@
 import express from "express";
-import multer from "multer";
 import dotenv from "dotenv";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import ApiError from "./ApiError.js";
@@ -9,29 +8,22 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT;
 
-// ✅ Set up Multer for file uploads
-const storage = multer.diskStorage({
-  destination: "uploads/",
-  filename: (_, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname}`);
-  },
-});
-
-const upload = multer({ storage });
+// ✅ Middleware to parse JSON request bodies
+app.use(express.json());
 
 // ✅ Initialize Google Generative AI
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
 
-async function analyzeVideo(videoPath, userQuery) {
+async function analyzeVideo(videoUrl, userQuery) {
   try {
-    console.log("Processing video:", videoPath);
+    console.log("Processing video:", videoUrl);
 
     // Ensure correct model initialization
     const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
     const prompt = `
-      Extract detailed insights from the uploaded video, structuring the summary for student notes.
-      The summary should include:
+      Extract detailed insights from the YouTube video at the following URL: ${videoUrl}.
+      Structure the summary for student notes with these key points:
 
       1. **Key Topics Covered**
       2. **Important Definitions & Terminologies**
@@ -51,15 +43,18 @@ async function analyzeVideo(videoPath, userQuery) {
   }
 }
 
-app.post("/summarize", upload.single("video"), async (req, res) => {
+app.post("/summarize", async (req, res) => {
   try {
-    if (!req.file) {
-      throw new ApiError(500, "A video file is required.");
+    const {
+      videoUrl,
+      userQuery = "Summarize the key points of the topic explained in this video.",
+    } = req.body;
+
+    if (!videoUrl || !videoUrl.includes("youtube.com")) {
+      throw new ApiError(400, "A valid YouTube video URL is required.");
     }
 
-    const userQuery =
-      req.body.query || "Summarize the key points in this video.";
-    const summary = await analyzeVideo(req.file.path, userQuery);
+    const summary = await analyzeVideo(videoUrl, userQuery);
 
     if (summary) {
       return res.json({
@@ -70,11 +65,7 @@ app.post("/summarize", upload.single("video"), async (req, res) => {
       throw new ApiError(500, "Failed to generate summary.");
     }
   } catch (error) {
-    throw new ApiError(
-      500,
-      `Failed to generate summary. ${error.message}`,
-      error
-    );
+    throw new ApiError(500, `Internal server error. ${error.message}`, error);
   }
 });
 
