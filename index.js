@@ -54,7 +54,7 @@ async function analyzeVideo(videoPath, userQuery) {
 app.post("/summarize", upload.single("video"), async (req, res) => {
   try {
     if (!req.file) {
-      return res.status(400).json({ error: "No video file uploaded." });
+      throw new ApiError(500, "A video file is required.");
     }
 
     const userQuery =
