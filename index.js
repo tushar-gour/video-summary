@@ -25,13 +25,15 @@ async function analyzeVideo(videoUrl, userQuery) {
       Extract detailed insights from the YouTube video at the following URL: ${videoUrl}.
       Structure the summary for student notes with these key points:
 
-      1. **Key Topics Covered**
-      2. **Important Definitions & Terminologies**
-      3. **Step-by-Step Explanation of Concepts**
-      4. **Real-World Applications & Examples**
-      5. **Critical Insights & Takeaways**
+      1. Key Topics Covered**
+      2. Important Definitions & Terminologies
+      3. Step-by-Step Explanation of Concepts
+      4. Real-World Applications & Examples
+      5. Critical Insights & Takeaways
 
-      **User Query:** ${userQuery}
+      User Query: ${userQuery}
+
+      Dont include "\n" or anything else in response just write one paragraph
     `;
 
     const result = await model.generateContent(prompt);
